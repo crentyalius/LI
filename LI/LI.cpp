@@ -13,7 +13,7 @@
 #include <numeric>
 
 using namespace std;
-
+template<typename T> T weightedMedian(const std::vector<T>& values, const std::vector<size_t>& weights);
 
 
 #pragma region Utility
@@ -90,17 +90,37 @@ int main()
        {{5.0, 4.0}, 9.0}
     };
 
+
+
+
     int numVariables  = points[1].x.size(), numPoints = points.size();
 
 
+    std::cout<<"количество измерений" << numVariables << "  \n"<<"количество точек" << numPoints << endl;
 
-    std::cout << numVariables << "  \n"<< numPoints<<endl;
 
+    std::vector<double> values = { 1.0, 2.0, 3.0, 4.0, 5.0 };
+    std::vector<size_t> weights = { 1, 2, 3, 4, 5 };
+
+    try {
+        double result = weightedMedian(values, weights);
+        std::cout << "Weighted Median: " << result << std::endl;
+    }
+    catch (std::exception& e) {
+        std::cerr << e.what() << std::endl;
+    }
+
+    return 0;
 
 
 }
 
+vector<double> gen_A(const vector<double>& X, const vector<double>& Y,int N)
+{
 
+
+
+}
 
 //сумма модулей. (2)
 double rss(int N, double* Y, double* X, double A, double B) {
@@ -115,8 +135,9 @@ double rss(int N, double* Y, double* X, double A, double B) {
 
 
 //взвешенная медиана
-template<typename T>
-T weightedMedian(const std::vector<T>& values, const std::vector<size_t>& weights) {
+template<typename T> T weightedMedian(const std::vector<T>& values, const std::vector<size_t>& weights)
+
+{
     if (values.empty() || weights.empty()) {
         throw std::invalid_argument("Values and weights must be non-empty");
     }
