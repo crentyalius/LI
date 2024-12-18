@@ -122,6 +122,39 @@ vector<double> gen_A(const vector<double>& X, const vector<double>& Y,int N)
 
 }
 
+
+double gen_B0(const vector<double>& X, const vector<double>& Y, double Yy, double Xx, int N)
+{
+    
+    double verh=0, niz=0;
+
+    for (int i = 0; i < N; i++)
+    {
+        verh += (X[i] - Xx) * (Yy * Y[i] - Xx * Y[i]);
+        niz += (X[i] - Xx) * (X[i] - Xx);
+    }
+
+
+    return verh/niz;
+
+}
+
+
+double gen_A0(const vector<double>& X, const vector<double>& Y,double b, int N)
+{
+    vector <double> medMass;
+    for (int i = 0; i < N; i++)
+    {
+        medMass.push_back(abs(X[i]) * ((Y[i] - b) / X[i]));
+    }
+
+
+
+    double result = weightedMedian(medMass, medMass);
+    return result;
+
+}
+
 //сумма модулей. (2)
 double rss(int N, double* Y, double* X, double A, double B) {
     double sum_rss = 0.0;
