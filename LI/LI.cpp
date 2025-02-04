@@ -10,7 +10,13 @@
 using namespace std;
 
 
-
+double mean(const std::vector<double>& X) {
+    double sum = 0.0;
+    for (double x : X) {
+        sum += x;
+    }
+    return sum / X.size();
+}
 
 
 template<typename T> T weightedMedian(const std::vector<T>& values, const std::vector<T>& weights)
@@ -165,6 +171,65 @@ int main() {
     std::cout << '\n';
     return 0;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /*
 * 
 * 
