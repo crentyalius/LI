@@ -249,8 +249,11 @@ int main() {
 #include "LI.h"
 
 using namespace std;
-template<typename T> T weightedMedian(const std::vector<T>& values, const std::vector<size_t>& weights);
+template<typename T> T weightedMedian(const std::vector<T>& values, const std::vector<T>& weights);
+double gen_B0(const vector<double>& X, const vector<double>& Y, int N);
 
+double gen_A0(const vector<double>& X, const vector<double>& Y, double b, int N);
+vector<int> Indexate(const vector<double>& X, const vector<double>& Y, double a0, double b0, int N);
 
 #pragma region Utility
 
@@ -320,51 +323,88 @@ int main()
 {
 
 
+    /*
+    std::vector<double> values = { 1.0, 2.0, 3.0, 4.0, 5.0 };
+    std::vector<size_t> weights = { 1, 2, 3, 4, 5 };
 
-    //vector<Point> points;
-    //int numVariables  = points[1].x.size(), numPoints = points.size();
+    try {
+        double result = weightedMedian(values, weights);
+        std::cout << "Weighted Median: " << result << std::endl;
+    }
+    catch (std::exception& e) {
+        std::cerr << e.what() << std::endl;
+    }*/
 
-
-    //std::cout<<"количество измерений" << numVariables << "  \n"<<"количество точек" << numPoints << endl;
-
-
-std::vector<double> values = { 1.0, 2.0, 3.0, 4.0, 5.0 };
-std::vector<size_t> weights = { 1, 2, 3, 4, 5 };
-
-try {
-    double result = weightedMedian(values, weights);
-    std::cout << "Weighted Median: " << result << std::endl;
-}
-catch (std::exception& e) {
-    std::cerr << e.what() << std::endl;
-}
-
-return 0;
-
-
-}
-
-
-
-
-double gen_B0(const vector<double>& X, const vector<double>& Y, int N)
-{
-    double Yy = accumulate(Y.begin(), Y.end(), 0.0) / Y.size(), Xx = accumulate(X.begin(), X.end(), 0.0) / X.size();
-    double verh = 0, niz = 0;
+    //инициализация массивов
+    vector <double> X;
+    vector <double> Y;
+    vector <int> Index;
+    int N = 100;
 
     for (int i = 0; i < N; i++)
     {
-        verh += (X[i] - Xx) * (Yy * Y[i] - Xx * Y[i]);
-        niz += (X[i] - Xx) * (X[i] - Xx);
+        X[i] = i;
+        Y[i] = i;
+
+
+    }
+    //инициализация первичных a0 и b0
+   double b0= gen_B0(X, Y, N);
+   double a0 = gen_A0(X, Y, b0, N);
+   
+   Index = Indexate(X, Y, a0, b0, N);
+
+
+
+
+    return 0;
+
+
+}
+
+vector<int> Indexate(const vector<double>& X, const vector<double>& Y, double a0, double b0, int N)
+{
+    vector<int> index;
+    for (int i = 0; i < N; i++)
+    {
+        for (int j = 0; j < N; j++)
+        {
+            if (a0 == (Y[i] - b0) / X[j])
+            {
+                index[i] = j;
+                break;
+            }
+
+        }
+
+
+    }
+    return index;
+
+}
+
+double gen_B0(const vector<double>& X, const vector<double>& Y,  int N)
+{
+    double Yy, Xx;
+
+    Yy= accumulate(Y.begin(), Y.end(), 0)/Y.size();
+    Xx = accumulate(X.begin(), X.end(), 0) / X.size();
+
+    double up =0, down =0;
+
+    for (int i = 0; i < N; i++)
+    {
+        up += (X[i] - Xx) * (Yy * Y[i] - Xx * Y[i]);
+        down += (X[i] - Xx) * (X[i] - Xx);
     }
 
 
-    return verh / niz;
+    return up / down;
 
 }
 
 
-double gen_A0(const vector<double>& X, const vector<double>& Y, double b, int N)
+double gen_A0(const vector<double>& X, const vector<double>& Y,double b, int N)
 {
     vector <double> medMass;
     for (int i = 0; i < N; i++)
@@ -430,16 +470,3 @@ template<typename T> T weightedMedian(const std::vector<T>& values, const std::v
     return medianValue;
 }
 
-
-
-
-//
-//
-//
-//vector<Point> points = {
-//   {{1.0, 2.0}, 3.0},
-//   {{2.0, 1.0}, 4.0},
-//   {{3.0, 3.0}, 6.0},
-//   {{4.0, 5.0}, 8.0},
-//   {{5.0, 4.0}, 9.0}
-//};*/
