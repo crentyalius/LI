@@ -14,6 +14,9 @@
 
 using namespace std;
 template<typename T> T weightedMedian(const std::vector<T>& values, const std::vector<T>& weights);
+void sortValuesAndWeights(std::vector<double>& values, std::vector<double>& weights);
+
+
 double gen_B0(const vector<double>& X, const vector<double>& Y, int N);
 
 double gen_B0_Alt(const vector<double>& X, const vector<double>& Y, int N);
@@ -23,7 +26,7 @@ vector<int> Indexate(const vector<double>& X, const vector<double>& Y, double a0
 int main()
 {
     setlocale(LC_ALL, "ru_RU.UTF-8");
-
+    
     /*
     std::vector<double> values = { 1.0, 2.0, 3.0, 4.0, 5.0 };
     std::vector<size_t> weights = { 1, 2, 3, 4, 5 };
@@ -37,7 +40,7 @@ int main()
     }*/
 
     //инициализация массивов
-    int N = 5;
+    int N = 5,k=0;
     vector <double> X = { 0.450, 0.50, 0.60, 2.0, 1.2 };
     vector <double> Y = { 4.0, 5.0, 7.0, 10.0, 10.0 };
     vector <int> Index;
@@ -53,7 +56,7 @@ int main()
 
      //инициализация первичных a0 и b0
     double b0 = gen_B0(X, Y, N);//работает 
-    double b00 = gen_B0_Alt(X, Y, N);//работает 
+    //double b00 = gen_B0_Alt(X, Y, N);//работает 
     double a0 = gen_A0(X, Y, b0, N);// работает.
 
     Index = Indexate(X, Y, a0, b0, N);
@@ -63,14 +66,22 @@ int main()
     for (int i = 0; i < Index.size(); i++)
     {
 
-        printf("%d ", Index[i]);
+        printf("%d \n", Index[i]);
 
     }
-    printf("alt");
-   // Index = Indexate(X, Y, a0, b00, N);
-   // printf("Alt b0=%f \n", b00);
-   // printf("b0=%f \n", b0);
-   // printf("a0=%f \n", a0);
+ 
+
+
+    printf("b0=%f \n", b0);
+    printf("a0=%f \n\n\n", a0);
+
+    k++;
+    double Xj = X[Index[0]];
+    for (int i = 0; i < N; i++)
+        X[i] += Xj;
+
+
+
 
 
     return 0;
@@ -87,13 +98,12 @@ vector<int> Indexate(const vector<double>& X, const vector<double>& Y, double a0
     {
         for (int j = 0; j < N; j++)
         {
-            if (min >abs(a0 - (Y[i] - b0) / X[j] ))
-                min = abs(a0-(Y[i] - b0) / X[j]  );
+            
             if (a0 == (Y[i] - b0) / X[j])
             {
                 index.push_back(i);
                 //index[i] = j;
-                printf("X[%d]  подходит Y[%d]\n", j,i);
+                //printf("X[%d]  подходит Y[%d]\n", j,i);
                 break;
             }
             //else printf("NO %f \n", a0 -((Y[i] - b0) / X[j]));
@@ -104,7 +114,7 @@ vector<int> Indexate(const vector<double>& X, const vector<double>& Y, double a0
 
         
     }
-    printf("min index=%f\n", min);
+    
     return index;
 
 }
@@ -168,14 +178,15 @@ double gen_B0_Alt(const vector<double>& X, const vector<double>& Y, int N = 0)
 
 double gen_A0(const vector<double>& X, const vector<double>& Y, double b, int N)
 {
-    vector <double> medMass;
+    vector <double> medMass, x;
     for (int i = 0; i < N; i++)
     {
+        x.push_back(X[i]);
         medMass.push_back(((Y[i] - b) / X[i]));
         //printf("%f ", ((Y[i] - b) / X[i]));
     }
 
-
+    sortValuesAndWeights(medMass, x);
 
     double result = weightedMedian( medMass, X );
     return result;
