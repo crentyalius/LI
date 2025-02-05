@@ -22,7 +22,7 @@ vector<int> Indexate(const vector<double>& X, const vector<double>& Y, double a0
 
 int main()
 {
-
+    setlocale(LC_ALL, "ru_RU.UTF-8");
 
     /*
     std::vector<double> values = { 1.0, 2.0, 3.0, 4.0, 5.0 };
@@ -52,8 +52,8 @@ int main()
      }*/
 
      //инициализация первичных a0 и b0
-    double b0 = gen_B0(X, Y, N);//работает ли?
-    double b00 = gen_B0_Alt(X, Y, N);//работает ли?
+    double b0 = gen_B0(X, Y, N);//работает 
+    double b00 = gen_B0_Alt(X, Y, N);//работает 
     double a0 = gen_A0(X, Y, b0, N);// работает.
 
     Index = Indexate(X, Y, a0, b0, N);
@@ -67,10 +67,12 @@ int main()
 
     }
     printf("alt");
-    Index = Indexate(X, Y, a0, b00, N);
-    printf("Alt b0=%f \n", b00);
-    printf("b0=%f \n", b0);
-    printf("a0=%f \n", a0);
+   // Index = Indexate(X, Y, a0, b00, N);
+   // printf("Alt b0=%f \n", b00);
+   // printf("b0=%f \n", b0);
+   // printf("a0=%f \n", a0);
+
+
     return 0;
 
 
@@ -91,7 +93,7 @@ vector<int> Indexate(const vector<double>& X, const vector<double>& Y, double a0
             {
                 index.push_back(i);
                 //index[i] = j;
-                printf("YES %f \n", a0 - ((Y[i] - b0) / X[j]));
+                printf("X[%d]  подходит Y[%d]\n", j,i);
                 break;
             }
             //else printf("NO %f \n", a0 -((Y[i] - b0) / X[j]));
@@ -130,7 +132,7 @@ double gen_B0(const vector<double>& X, const vector<double>& Y, int N = 0)
     Xx/= (double)X.size();
     
 
-    double up = 0, down = 0;
+    double up = 0.0, down = 0.0;
 
     for (int i = 0; i < N; i++)
     {
@@ -175,7 +177,7 @@ double gen_A0(const vector<double>& X, const vector<double>& Y, double b, int N)
 
 
 
-    double result = weightedMedian(X, medMass);
+    double result = weightedMedian( medMass, X );
     return result;
 
 }
