@@ -56,7 +56,7 @@ int main()
     double b00 = gen_B0_Alt(X, Y, N);//работает ли?
     double a0 = gen_A0(X, Y, b0, N);// работает.
 
-    Index = Indexate(X, Y, a0, b00, N);
+    Index = Indexate(X, Y, a0, b0, N);
 
     int z = Index.size();
 
@@ -66,9 +66,11 @@ int main()
         printf("%d ", Index[i]);
 
     }
-    printf("%f ", b00);
-    printf("%f ", b0);
-    printf("%f ", a0);
+    printf("alt");
+    Index = Indexate(X, Y, a0, b00, N);
+    printf("Alt b0=%f \n", b00);
+    printf("b0=%f \n", b0);
+    printf("a0=%f \n", a0);
     return 0;
 
 
@@ -76,25 +78,31 @@ int main()
 
 vector<int> Indexate(const vector<double>& X, const vector<double>& Y, double a0, double b0, int N)
 {
+    double min = abs(a0 - (Y[1] - b0) / X[1]);
+
     vector<int> index;
     for (int i = 0; i < N; i++)
     {
         for (int j = 0; j < N; j++)
         {
+            if (min >abs(a0 - (Y[i] - b0) / X[j] ))
+                min = abs(a0-(Y[i] - b0) / X[j]  );
             if (a0 == (Y[i] - b0) / X[j])
             {
                 index.push_back(i);
                 //index[i] = j;
+                printf("YES %f \n", a0 - ((Y[i] - b0) / X[j]));
                 break;
             }
-            else printf("NO %f \n", a0 -((Y[i] - b0) / X[j]));
+            //else printf("NO %f \n", a0 -((Y[i] - b0) / X[j]));
 
 
 
         }
 
-
+        
     }
+    printf("min index=%f\n", min);
     return index;
 
 }
@@ -105,10 +113,21 @@ double gen_B0(const vector<double>& X, const vector<double>& Y, int N = 0)
         N = X.size();
 
 
-    double Yy, Xx;
+    double Yy=0, Xx=0;
 
-    Yy = accumulate(Y.begin(), Y.end(), 0) / (double)Y.size();
-    Xx = accumulate(X.begin(), X.end(), 0) / (double)X.size();
+    for (int i = 0; i < N; i++)
+    {
+        Yy += Y[i];
+        Xx += X[i];
+
+
+    }
+
+    Yy /=  (double)Y.size();
+  
+
+
+    Xx/= (double)X.size();
     
 
     double up = 0, down = 0;
