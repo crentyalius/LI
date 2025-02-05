@@ -1,21 +1,24 @@
-﻿#include <iostream>
-#include <random>
+// Li&ARCH.cpp : Этот файл содержит функцию "main". Здесь начинается и заканчивается выполнение программы.
+//
+
+#include <iostream>
 #include <vector>
 #include <cmath>
-#include <algorithm>
 #include <limits>
-#include <array>
-#include <chrono>
+#include <algorithm>
+#include <random>
+#include <vector>
+#include <algorithm>
+#include <iterator>
 #include <numeric>
-using namespace std;
 
 using namespace std;
 template<typename T> T weightedMedian(const std::vector<T>& values, const std::vector<T>& weights);
 double gen_B0(const vector<double>& X, const vector<double>& Y, int N);
 
+double gen_B0_Alt(const vector<double>& X, const vector<double>& Y, int N);
 double gen_A0(const vector<double>& X, const vector<double>& Y, double b, int N);
 vector<int> Indexate(const vector<double>& X, const vector<double>& Y, double a0, double b0, int N);
-
 
 int main()
 {
@@ -35,33 +38,37 @@ int main()
 
     //инициализация массивов
     int N = 5;
-    vector <double> X= { 0.450, 0.50, 0.60, 2.0, 1.2 };
-    vector <double> Y= { 4.0, 5.0, 7.0, 10.0, 10.0 };
+    vector <double> X = { 0.450, 0.50, 0.60, 2.0, 1.2 };
+    vector <double> Y = { 4.0, 5.0, 7.0, 10.0, 10.0 };
     vector <int> Index;
-    
 
-   /* for (int i = 0; i < N; i++)
+
+    /* for (int i = 0; i < N; i++)
+     {
+         X.push_back(i);
+         Y.push_back(i);
+
+
+     }*/
+
+     //инициализация первичных a0 и b0
+    double b0 = gen_B0(X, Y, N);//работает ли?
+    double b00 = gen_B0_Alt(X, Y, N);//работает ли?
+    double a0 = gen_A0(X, Y, b0, N);// работает.
+
+    Index = Indexate(X, Y, a0, b00, N);
+
+    int z = Index.size();
+
+    for (int i = 0; i < Index.size(); i++)
     {
-        X.push_back(i);
-        Y.push_back(i);
 
+        printf("%d ", Index[i]);
 
-    }*/
-
-    //инициализация первичных a0 и b0
-   double b0= gen_B0(X, Y, N);
-   double a0 = gen_A0(X, Y, b0, N);// не до конца понятно, корректно ли работает.
-   
-   Index = Indexate(X, Y, a0, b0, N);
-
-   int z = Index.size();
-
-   for (int i = 0; i < Index.size(); i++)
-   {
-
-       printf("%d ", Index[i]);
-
-   }
+    }
+    printf("%f ", b00);
+    printf("%f ", b0);
+    printf("%f ", a0);
     return 0;
 
 
@@ -80,6 +87,8 @@ vector<int> Indexate(const vector<double>& X, const vector<double>& Y, double a0
                 //index[i] = j;
                 break;
             }
+            else printf("NO %f \n", a0 -((Y[i] - b0) / X[j]));
+
 
 
         }
@@ -90,14 +99,19 @@ vector<int> Indexate(const vector<double>& X, const vector<double>& Y, double a0
 
 }
 
-double gen_B0(const vector<double>& X, const vector<double>& Y,  int N)
+double gen_B0(const vector<double>& X, const vector<double>& Y, int N = 0)
 {
+    if (N == 0)
+        N = X.size();
+
+
     double Yy, Xx;
 
-    Yy= accumulate(Y.begin(), Y.end(), 0)/Y.size();
-    Xx = accumulate(X.begin(), X.end(), 0) / X.size();
+    Yy = accumulate(Y.begin(), Y.end(), 0) / (double)Y.size();
+    Xx = accumulate(X.begin(), X.end(), 0) / (double)X.size();
+    
 
-    double up =0, down =0;
+    double up = 0, down = 0;
 
     for (int i = 0; i < N; i++)
     {
@@ -110,18 +124,39 @@ double gen_B0(const vector<double>& X, const vector<double>& Y,  int N)
 
 }
 
+double gen_B0_Alt(const vector<double>& X, const vector<double>& Y, int N = 0)
+{
+    if (N == 0)
+        N = X.size();
 
-double gen_A0(const vector<double>& X, const vector<double>& Y,double b, int N)
+    double Xx=0, Yy=0, XXX=0,XY=0;
+
+    for (int i = 0; i < N; i++)
+    {
+        Xx += X[i];
+        Yy += Y[i];
+        XXX += X[i] * X[i];
+        XY += X[i] * Y[i];
+    }
+
+    return (N * XY - Xx * Yy) / (N * XXX - Xx * Xx);
+    
+
+}
+
+
+double gen_A0(const vector<double>& X, const vector<double>& Y, double b, int N)
 {
     vector <double> medMass;
     for (int i = 0; i < N; i++)
     {
-        medMass.push_back(abs(X[i]) * ((Y[i] - b) / X[i]));
+        medMass.push_back(((Y[i] - b) / X[i]));
+        //printf("%f ", ((Y[i] - b) / X[i]));
     }
 
 
 
-    double result = weightedMedian(medMass, medMass);
+    double result = weightedMedian(X, medMass);
     return result;
 
 }
