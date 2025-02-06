@@ -75,17 +75,37 @@ int main()
     printf("b%d=%f \n",k, bk.back());
     printf("a%d=%f \n\n\n",k, ak.back());
 
+
     Index.clear();
     Index = Indexate(X, Y, ak.back(), bk.back(), N);
+    for (int i = 0; i < Index.size(); i++)
+    {
+
+        printf("%d \n", Index[i]);
+
+    }
     
    /* if (ak == a0)
         printf("финальная вариация\n а =%f\nb=%f\n");*/
    
     for (; abs(ak.back() - ak[ak.size() - 2]) > epsilon; k++)
     {
+        Xj = X[Index[0]];
+        for (int i = 0; i < N; i++)
+            X[i] -= Xj;
+        bk.push_back(bk.back() + ak.back() * Xj);
+        ak.push_back(gen_A0(X, Y, bk.back(), N));
 
+        printf("b%d=%f \n", k, bk.back());
+        printf("a%d=%f \n\n\n", k, ak.back());
+        Index.clear();
+        Index = Indexate(X, Y, ak.back(), bk.back(), N);
+        for (int i = 0; i < Index.size(); i++)
+        {
 
+            printf("%d \n", Index[i]);
 
+        }
     }
     
 
