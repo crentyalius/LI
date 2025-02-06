@@ -62,13 +62,15 @@ int main()
  
 
 
-    printf("b0=%f \n", bk.back());
-    printf("a0=%f \n\n\n", ak.back());
+    printf("b%d=%f \n", k, bk.back());
+    printf("a%d=%f \n\n\n", k, ak.back());
 
     k++;
     double Xj = X[Index[0]];
     for (int i = 0; i < N; i++)
         X[i] -= Xj;
+
+
      bk.push_back(bk.back() + ak.back() * Xj);
     ak.push_back(gen_A0(X, Y, bk.back(), N));
 
@@ -84,7 +86,7 @@ int main()
         printf("%d \n", Index[i]);
 
     }
-    
+    k++;
    /* if (ak == a0)
         printf("финальная вариация\n а =%f\nb=%f\n");*/
    
@@ -93,6 +95,8 @@ int main()
         Xj = X[Index[0]];
         for (int i = 0; i < N; i++)
             X[i] -= Xj;
+
+
         bk.push_back(bk.back() + ak.back() * Xj);
         ak.push_back(gen_A0(X, Y, bk.back(), N));
 
@@ -107,7 +111,8 @@ int main()
 
         }
     }
-    
+   /* printf("b%d=%f \n", k, bk.back());
+    printf("a%d=%f \n\n\n", k, ak.back());*/
 
     return 0;
 
@@ -211,7 +216,7 @@ double gen_A0(const vector<double>& X, const vector<double>& Y, double b, int N)
         //printf("%f ", ((Y[i] - b) / X[i]));
     }
 
-    sortValuesAndWeights(medMass, x);
+   // sortValuesAndWeights(medMass, x);
 
     double result = weightedMedian( medMass, X );
     return result;
