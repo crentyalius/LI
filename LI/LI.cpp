@@ -36,13 +36,6 @@ int main()
     vector <int> Index;
     N = X.size();
 
-    /* for (int i = 0; i < N; i++)
-     {
-         X.push_back(i);
-         Y.push_back(i);
-
-
-     }*/
 
      //инициализация первичных a0 и b0
     bk.push_back(gen_B0(X, Y, N));//работает 
@@ -111,8 +104,7 @@ int main()
 
         }
     }
-   /* printf("b%d=%f \n", k, bk.back());
-    printf("a%d=%f \n\n\n", k, ak.back());*/
+
 
     return 0;
 
