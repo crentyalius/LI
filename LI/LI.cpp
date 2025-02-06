@@ -13,38 +13,28 @@
 #include <numeric>
 
 using namespace std;
-template<typename T> T weightedMedian(const std::vector<T>& values, const std::vector<T>& weights);
-void sortValuesAndWeights(std::vector<double>& values, std::vector<double>& weights);
+template<typename T> T weightedMedian(const std::vector<T>& values, const std::vector<T>& weights);//взвешивание медианы
+void sortValuesAndWeights(std::vector<double>& values, std::vector<double>& weights);//сортировка по значениям
 
 
-double gen_B0(const vector<double>& X, const vector<double>& Y, int N);
+double gen_B0(const vector<double>& X, const vector<double>& Y, int N);//генерация b0
+double gen_A0(const vector<double>& X, const vector<double>& Y, double b, int N);//генерация a0
 
-double gen_B0_Alt(const vector<double>& X, const vector<double>& Y, int N);
-double gen_A0(const vector<double>& X, const vector<double>& Y, double b, int N);
-vector<int> Indexate(const vector<double>& X, const vector<double>& Y, double a0, double b0, int N);
+
+vector<int> Indexate(const vector<double>& X, const vector<double>& Y, double a0, double b0, int N);//вывод индексов
 
 int main()
 {
     setlocale(LC_ALL, "ru_RU.UTF-8");
-    
-    /*
-    std::vector<double> values = { 1.0, 2.0, 3.0, 4.0, 5.0 };
-    std::vector<size_t> weights = { 1, 2, 3, 4, 5 };
-
-    try {
-        double result = weightedMedian(values, weights);
-        std::cout << "Weighted Median: " << result << std::endl;
-    }
-    catch (std::exception& e) {
-        std::cerr << e.what() << std::endl;
-    }*/
-
+    const double epsilon = 0.001;
+    vector <double> bk;
+    vector <double> ak;
     //инициализация массивов
     int N = 5,k=0;
     vector <double> X = { 0.450, 0.50, 0.60, 2.0, 1.2 };
     vector <double> Y = { 4.0, 5.0, 7.0, 10.0, 10.0 };
     vector <int> Index;
-
+    N = X.size();
 
     /* for (int i = 0; i < N; i++)
      {
@@ -55,11 +45,11 @@ int main()
      }*/
 
      //инициализация первичных a0 и b0
-    double b0 = gen_B0(X, Y, N);//работает 
-    //double b00 = gen_B0_Alt(X, Y, N);//работает 
-    double a0 = gen_A0(X, Y, b0, N);// работает.
+    bk.push_back(gen_B0(X, Y, N));//работает 
+   
+    ak.push_back(gen_A0(X, Y, bk.back(), N));// работает.
 
-    Index = Indexate(X, Y, a0, b0, N);
+    Index = Indexate(X, Y, ak.back(), bk.back(), N);
 
     int z = Index.size();
 
@@ -72,17 +62,32 @@ int main()
  
 
 
-    printf("b0=%f \n", b0);
-    printf("a0=%f \n\n\n", a0);
+    printf("b0=%f \n", bk.back());
+    printf("a0=%f \n\n\n", ak.back());
 
     k++;
     double Xj = X[Index[0]];
     for (int i = 0; i < N; i++)
-        X[i] += Xj;
+        X[i] -= Xj;
+     bk.push_back(bk.back() + ak.back() * Xj);
+    ak.push_back(gen_A0(X, Y, bk.back(), N));
+
+    printf("b%d=%f \n",k, bk.back());
+    printf("a%d=%f \n\n\n",k, ak.back());
+
+    Index.clear();
+    Index = Indexate(X, Y, ak.back(), bk.back(), N);
+    
+   /* if (ak == a0)
+        printf("финальная вариация\n а =%f\nb=%f\n");*/
+   
+    for (; abs(ak.back() - ak[ak.size() - 2]) > epsilon; k++)
+    {
 
 
 
-
+    }
+    
 
     return 0;
 
