@@ -34,6 +34,7 @@ int main()
     vector <double> X = { 0.450, 0.50, 0.60, 2.0, 1.2 };
     vector <double> Y = { 4.0, 5.0, 7.0, 10.0, 10.0 };
     vector <int> Index;
+    vector <int> IndexStory;
     N = X.size();
 
 
@@ -44,48 +45,37 @@ int main()
 
     Index = Indexate(X, Y, ak.back(), bk.back(), N);
 
-    int z = Index.size();
+   
 
-    for (int i = 0; i < Index.size(); i++)
-    {
-
-        printf("%d \n", Index[i]);
-
-    }
+    
  
 
 
-    printf("b%d=%f \n", k, bk.back());
-    printf("a%d=%f \n\n\n", k, ak.back());
+   // printf("b%d=%f \n", k, bk.back());
+  //  printf("a%d=%f \n\n\n", k, ak.back());
 
     k++;
-    double Xj = X[Index[0]];
+    double Xj = X[Index.back()];
     for (int i = 0; i < N; i++)
         X[i] -= Xj;
 
 
-     bk.push_back(bk.back() + ak.back() * Xj);
+    bk.push_back(bk.back() + ak.back() * Xj);
     ak.push_back(gen_A0(X, Y, bk.back(), N));
 
-    printf("b%d=%f \n",k, bk.back());
-    printf("a%d=%f \n\n\n",k, ak.back());
+   // printf("b%d=%f \n",k, bk.back());
+   // printf("a%d=%f \n\n\n",k, ak.back());
 
 
     Index.clear();
     Index = Indexate(X, Y, ak.back(), bk.back(), N);
-    for (int i = 0; i < Index.size(); i++)
-    {
-
-        printf("%d \n", Index[i]);
-
-    }
+    IndexStory.push_back(Index.back());
     k++;
-   /* if (ak == a0)
-        printf("финальная вариация\n а =%f\nb=%f\n");*/
+
    
     for (; abs(ak.back() - ak[ak.size() - 2]) > epsilon; k++)
     {
-        Xj = X[Index[0]];
+        Xj = X[Index.back()];
         for (int i = 0; i < N; i++)
             X[i] -= Xj;
 
@@ -93,18 +83,21 @@ int main()
         bk.push_back(bk.back() + ak.back() * Xj);
         ak.push_back(gen_A0(X, Y, bk.back(), N));
 
-        printf("b%d=%f \n", k, bk.back());
-        printf("a%d=%f \n\n\n", k, ak.back());
+       
+
         Index.clear();
         Index = Indexate(X, Y, ak.back(), bk.back(), N);
-        for (int i = 0; i < Index.size(); i++)
-        {
 
-            printf("%d \n", Index[i]);
 
-        }
+        bk.push_back(bk.back() - ak.back() * Xj);
+        IndexStory.push_back(Index.back());
+
+
+        printf("b%d=%f \n", k, bk.back());
+        printf("a%d=%f \n\n\n", k, ak.back());
     }
-
+    printf("b%d=%f \n", k, bk.back());
+    printf("a%d=%f \n\n\n", k, ak.back());
 
     return 0;
 
@@ -148,24 +141,18 @@ double gen_B0(const vector<double>& X, const vector<double>& Y, int N = 0)
 
 
     double Yy=0, Xx=0;
-
     for (int i = 0; i < N; i++)
     {
         Yy += Y[i];
         Xx += X[i];
-
-
     }
-
     Yy /=  (double)Y.size();
-  
-
-
     Xx/= (double)X.size();
     
 
-    double up = 0.0, down = 0.0;
 
+
+    double up = 0.0, down = 0.0;
     for (int i = 0; i < N; i++)
     {
         up += (X[i] - Xx) * (Yy * Y[i] - Xx * Y[i]);
@@ -208,9 +195,11 @@ double gen_A0(const vector<double>& X, const vector<double>& Y, double b, int N)
         //printf("%f ", ((Y[i] - b) / X[i]));
     }
 
-   // sortValuesAndWeights(medMass, x);
+    //sortValuesAndWeights(medMass, x);
 
     double result = weightedMedian( medMass, X );
+
+     
     return result;
 
 }
