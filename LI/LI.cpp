@@ -59,7 +59,12 @@ int main()
     printf("a%d=%f \n\n\n", k, ak.back());
 
     k++;
-    double Xj = X[Index[0]];
+    
+    double Xj;
+    // Xj = X[Index.back()];
+     Xj = X[Index[0]];
+
+    
     for (int i = 0; i < N; i++)
         X[i] -= Xj;
 
@@ -85,7 +90,10 @@ int main()
    
     for (; abs(ak.back() - ak[ak.size() - 2]) > epsilon; k++)
     {
-        Xj = X[Index[0]];
+         //Xj = X[Index.back()];
+         Xj = X[Index[0]];
+
+        
         for (int i = 0; i < N; i++)
             X[i] -= Xj;
 
