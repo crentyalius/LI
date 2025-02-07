@@ -57,8 +57,8 @@ int main()
     k++;
     
     double Xj;
-    // Xj = X[Index.back()];
-     Xj = X[Index[0]];
+     Xj = X[Index.back()];
+    // Xj = X[Index[0]];
 
     
     for (int i = 0; i < N; i++)
@@ -80,8 +80,8 @@ int main()
    
     for (; abs(ak.back() - ak[ak.size() - 2]) > epsilon; k++)
     {
-         //Xj = X[Index.back()];
-         Xj = X[Index[0]];
+         Xj = X[Index.back()];
+         //Xj = X[Index[0]];
 
         
         for (int i = 0; i < N; i++)
@@ -98,9 +98,10 @@ int main()
 
 
         bk.push_back(bk.back() - ak.back() * Xj);
-        IndexStory.push_back(Index.back());
+       // IndexStory.push_back(Index.back());
+        
 
-
+        printf("bLS=%f \n", (gen_B0(X, Y, N)));
         printf("b%d=%f \n", k, bk.back());
         printf("a%d=%f \n\n\n", k, ak.back());
     }
@@ -198,14 +199,14 @@ double gen_A0(const vector<double>& X, const vector<double>& Y, double b, int N)
     vector <double> medMass, x;
     for (int i = 0; i < N; i++)
     {
-        x.push_back(X[i]);
+        x.push_back(abs(X[i]));
         medMass.push_back(((Y[i] - b) / X[i]));
         //printf("%f ", ((Y[i] - b) / X[i]));
     }
 
     //sortValuesAndWeights(medMass, x);
 
-    double result = weightedMedian( medMass, X );
+    double result = weightedMedian( medMass, x );
 
      
     return result;
