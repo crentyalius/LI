@@ -101,12 +101,12 @@ int main()
        // IndexStory.push_back(Index.back());
         
 
-        printf("bLS=%f \n", (gen_B0(X, Y, N)));
-        printf("b%d=%f \n", k, bk.back());
-        printf("a%d=%f \n\n\n", k, ak.back());
+        //std::printf("bLS=%f \n", (gen_B0(X, Y, N)));
+       // std::printf("b%d=%f \n", k, bk.back());
+       // std::printf("a%d=%f \n\n\n", k, ak.back());
     }
-    printf("b%d=%f \n", k, bk.back());
-    printf("a%d=%f \n\n\n", k, ak.back());
+    std::printf("b%d=%f \n", k, bk.back());
+    std::printf("a%d=%f \n\n\n", k, ak.back());
 
     return 0;
 
