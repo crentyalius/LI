@@ -11,6 +11,8 @@
 #include <algorithm>
 #include <iterator>
 #include <numeric>
+#include <windows.h>
+
 
 using namespace std;
 template<typename T> T weightedMedian(const std::vector<T>& values, const std::vector<T>& weights);//взвешивание медианы
@@ -35,6 +37,13 @@ int main()
     vector <double> Y = { 4.0, 5.0, 7.0, 10.0, 10.0 };
     vector <int> Index;
     vector <int> IndexStory;
+     std::string filename = openFileDialog();
+     if (filename.empty()) {
+        std::cerr << "Файл не выбран!" << std::endl;
+        return 1;
+    }
+    fillArraysFromFile(filename, array1, array2);
+    
     N = X.size();
 
 
@@ -112,6 +121,44 @@ int main()
 
 
 }
+
+std::string openFileDialog() {
+    OPENFILENAME ofn;
+    char fileName[MAX_PATH] = "";
+
+    ZeroMemory(&ofn, sizeof(ofn));
+    ofn.lStructSize = sizeof(ofn);
+    ofn.hwndOwner = NULL;
+    ofn.lpstrFilter = "Text Files (*.txt)\0*.txt\0All Files (*.*)\0*.*\0";
+    ofn.lpstrFile = fileName;
+    ofn.nMaxFile = MAX_PATH;
+    ofn.Flags = OFN_EXPLORER | OFN_FILEMUSTEXIST | OFN_HIDEREADONLY;
+    ofn.lpstrDefExt = "txt";
+
+    if (GetOpenFileName(&ofn)) {
+        return fileName; // Возвращаем путь к выбранному файлу
+    }
+    return ""; // Если файл не выбран, возвращаем пустую строку
+}
+
+
+bool fillArraysFromFile(const std::string& filename, std::vector<double>& array1, std::vector<double>& array2) {
+    std::ifstream file(filename); // Открываем файл для чтения
+    if (!file.is_open()) {        // Проверяем, удалось ли открыть файл
+        std::cerr << "Ошибка: не удалось открыть файл " << filename << std::endl;
+        return false;
+    }
+
+    double a, b;
+    while (file >> a >> b) { // Читаем пары значений
+        array1.push_back(a); // Добавляем первое значение в первый массив
+        array2.push_back(b); // Добавляем второе значение во второй массив
+    }
+
+    file.close(); // Закрываем файл
+    return true;
+}
+
 
 vector<int> Indexate(const vector<double>& X, const vector<double>& Y, double a0, double b0, int N)
 {
