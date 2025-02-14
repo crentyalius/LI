@@ -12,12 +12,16 @@
 #include <iterator>
 #include <numeric>
 #include <windows.h>
-
+#include <fstream>
+#include <iostream>
+#include <iomanip>
 
 using namespace std;
 template<typename T> T weightedMedian(const std::vector<T>& values, const std::vector<T>& weights);//взвешивание медианы
 void sortValuesAndWeights(std::vector<double>& values, std::vector<double>& weights);//сортировка по значениям
 
+std::string openFileDialog();
+bool fillArraysFromFile(const std::string& filename, std::vector<double>& array1, std::vector<double>& array2, int n );
 
 double gen_B0(const vector<double>& X, const vector<double>& Y, int N);//генерация b0
 double gen_A0(const vector<double>& X, const vector<double>& Y, double b, int N);//генерация a0
@@ -25,51 +29,59 @@ double gen_A0(const vector<double>& X, const vector<double>& Y, double b, int N)
 
 vector<int> Indexate(const vector<double>& X, const vector<double>& Y, double a0, double b0, int N);//вывод индексов
 
+
+
+
 int main()
 {
+
+
     setlocale(LC_ALL, "ru_RU.UTF-8");
     const double epsilon = 0.001;
     vector <double> bk;
     vector <double> ak;
     //инициализация массивов
-    int N = 5,k=0;
+    int N = 5, k = 0;
     vector <double> X = { 0.450, 0.50, 0.60, 2.0, 1.2 };
     vector <double> Y = { 4.0, 5.0, 7.0, 10.0, 10.0 };
     vector <int> Index;
     vector <int> IndexStory;
-     std::string filename = openFileDialog();
-     if (filename.empty()) {
-        std::cerr << "Файл не выбран!" << std::endl;
-        return 1;
-    }
-    fillArraysFromFile(filename, array1, array2);
+
+
+
+
+
+
+    std::string filename = "arrays.txt";
     
+    fillArraysFromFile(filename, X, Y,N);
+
     N = X.size();
 
 
-     //инициализация первичных a0 и b0
+    //инициализация первичных a0 и b0
     bk.push_back(gen_B0(X, Y, N));//работает 
-   
+
     ak.push_back(gen_A0(X, Y, bk.back(), N));// работает.
 
     Index = Indexate(X, Y, ak.back(), bk.back(), N);
 
-   
-
-    
- 
 
 
-   // printf("b%d=%f \n", k, bk.back());
-  //  printf("a%d=%f \n\n\n", k, ak.back());
+
+
+
+
+    // printf("b%d=%f \n", k, bk.back());
+   //  printf("a%d=%f \n\n\n", k, ak.back());
 
     k++;
-    
+
     double Xj;
-     Xj = X[Index.back()];
+    Xj = X[Index.back()];
     // Xj = X[Index[0]];
 
-    
+
     for (int i = 0; i < N; i++)
         X[i] -= Xj;
 
@@ -77,8 +89,8 @@ int main()
     bk.push_back(bk.back() + ak.back() * Xj);
     ak.push_back(gen_A0(X, Y, bk.back(), N));
 
-   // printf("b%d=%f \n",k, bk.back());
-   // printf("a%d=%f \n\n\n",k, ak.back());
+    // printf("b%d=%f \n",k, bk.back());
+    // printf("a%d=%f \n\n\n",k, ak.back());
 
 
     Index.clear();
@@ -86,13 +98,13 @@ int main()
     IndexStory.push_back(Index.back());
     k++;
 
-   
+
     for (; abs(ak.back() - ak[ak.size() - 2]) > epsilon; k++)
     {
-         Xj = X[Index.back()];
-         //Xj = X[Index[0]];
+        Xj = X[Index.back()];
+        //Xj = X[Index[0]];
 
-        
+
         for (int i = 0; i < N; i++)
             X[i] -= Xj;
 
@@ -100,19 +112,19 @@ int main()
         bk.push_back(bk.back() + ak.back() * Xj);
         ak.push_back(gen_A0(X, Y, bk.back(), N));
 
-       
+
 
         Index.clear();
         Index = Indexate(X, Y, ak.back(), bk.back(), N);
 
 
         bk.push_back(bk.back() - ak.back() * Xj);
-       // IndexStory.push_back(Index.back());
-        
+        // IndexStory.push_back(Index.back());
 
-        //std::printf("bLS=%f \n", (gen_B0(X, Y, N)));
-       // std::printf("b%d=%f \n", k, bk.back());
-       // std::printf("a%d=%f \n\n\n", k, ak.back());
+
+         //std::printf("bLS=%f \n", (gen_B0(X, Y, N)));
+        // std::printf("b%d=%f \n", k, bk.back());
+        // std::printf("a%d=%f \n\n\n", k, ak.back());
     }
     std::printf("b%d=%f \n", k, bk.back());
     std::printf("a%d=%f \n\n\n", k, ak.back());
@@ -122,40 +134,26 @@ int main()
 
 }
 
-std::string openFileDialog() {
-    OPENFILENAME ofn;
-    char fileName[MAX_PATH] = "";
-
-    ZeroMemory(&ofn, sizeof(ofn));
-    ofn.lStructSize = sizeof(ofn);
-    ofn.hwndOwner = NULL;
-    ofn.lpstrFilter = "Text Files (*.txt)\0*.txt\0All Files (*.*)\0*.*\0";
-    ofn.lpstrFile = fileName;
-    ofn.nMaxFile = MAX_PATH;
-    ofn.Flags = OFN_EXPLORER | OFN_FILEMUSTEXIST | OFN_HIDEREADONLY;
-    ofn.lpstrDefExt = "txt";
-
-    if (GetOpenFileName(&ofn)) {
-        return fileName; // Возвращаем путь к выбранному файлу
-    }
-    return ""; // Если файл не выбран, возвращаем пустую строку
-}
 
 
-bool fillArraysFromFile(const std::string& filename, std::vector<double>& array1, std::vector<double>& array2) {
-    std::ifstream file(filename); // Открываем файл для чтения
-    if (!file.is_open()) {        // Проверяем, удалось ли открыть файл
-        std::cerr << "Ошибка: не удалось открыть файл " << filename << std::endl;
+
+
+bool fillArraysFromFile(const std::string& filename, std::vector<double>& array1, std::vector<double>& array2,int n=0) {
+    
+        ifstream infile(filename);
+    if (!infile.is_open()) {
+        cerr << "Failed to open file for reading.\n";
         return false;
     }
 
-    double a, b;
-    while (file >> a >> b) { // Читаем пары значений
-        array1.push_back(a); // Добавляем первое значение в первый массив
-        array2.push_back(b); // Добавляем второе значение во второй массив
+    // Reading the values from the file and initializing the
+    // array
+    for (int i = 0; i < n; ++i) {
+        infile >> array1[i]>> array2[i];
     }
 
-    file.close(); // Закрываем файл
+    // Closing the file
+    infile.close();
     return true;
 }
 
@@ -169,7 +167,7 @@ vector<int> Indexate(const vector<double>& X, const vector<double>& Y, double a0
     {
         for (int j = 0; j < N; j++)
         {
-            
+
             if (a0 == (Y[i] - b0) / X[j])
             {
                 index.push_back(i);
@@ -183,9 +181,9 @@ vector<int> Indexate(const vector<double>& X, const vector<double>& Y, double a0
 
         }
 
-        
+
     }
-    
+
     return index;
 
 }
@@ -196,15 +194,15 @@ double gen_B0(const vector<double>& X, const vector<double>& Y, int N = 0)
         N = X.size();
 
 
-    double Yy=0, Xx=0;
+    double Yy = 0, Xx = 0;
     for (int i = 0; i < N; i++)
     {
         Yy += Y[i];
         Xx += X[i];
     }
-    Yy /=  (double)Y.size();
-    Xx/= (double)X.size();
-    
+    Yy /= (double)Y.size();
+    Xx /= (double)X.size();
+
 
 
 
@@ -225,7 +223,7 @@ double gen_B0_Alt(const vector<double>& X, const vector<double>& Y, int N = 0)
     if (N == 0)
         N = X.size();
 
-    double Xx=0, Yy=0, XXX=0,XY=0;
+    double Xx = 0, Yy = 0, XXX = 0, XY = 0;
 
     for (int i = 0; i < N; i++)
     {
@@ -236,7 +234,7 @@ double gen_B0_Alt(const vector<double>& X, const vector<double>& Y, int N = 0)
     }
 
     return (N * XY - Xx * Yy) / (N * XXX - Xx * Xx);
-    
+
 
 }
 
@@ -253,9 +251,9 @@ double gen_A0(const vector<double>& X, const vector<double>& Y, double b, int N)
 
     //sortValuesAndWeights(medMass, x);
 
-    double result = weightedMedian( medMass, x );
+    double result = weightedMedian(medMass, x);
 
-     
+
     return result;
 
 }
