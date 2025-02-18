@@ -309,6 +309,41 @@ template<typename T> T weightedMedian(const std::vector<T>& values, const std::v
     return medianValue;
 }
 
+template<typename T> T partition(const std::vector<T>& values, const std::vector<T>& weights, T p, T r)
+{
+    // Преобразуем веса в кумулятивные суммы
+    T result = abs(reduce(weights.begin(), weights[p]) - reduce(weights[r], weights.end()));
+
+    return result;
+}
+
+
+template<typename T> T weightedMedianRecursed(const std::vector<T>& values, const std::vector<T>& weights, T p, T r)
+{
+    if (p == r)
+        return p;
+    if (r - p = 1)
+    {
+        if (weights[p] == weights[r])
+            return (values[p] + values[r]) / 2;
+
+
+        if (weights[p] > weights[r])
+            return values[p];
+        else
+            return values[r];
+           
+
+    }
+    T wl, wg;
+        
+
+
+
+   
+}
+
+
 void sortValuesAndWeights(std::vector<double>& values, std::vector<double>& weights) {
     if (values.empty() || weights.empty() || values.size() != weights.size()) {
         std::cerr << "Ошибка: неверные входные данные!" << std::endl;
