@@ -271,17 +271,20 @@ double rss(int N, double* Y, double* X, double A, double B) {
 
 
 //взвешенная медиана
-template<typename T> T weightedMedian(const std::vector<T>& values, const std::vector<T>& weights)
+template<typename T> T weightedMedian(const std::vector<T>& values1, const std::vector<T>& weights1)
 
 {
-    if (values.empty() || weights.empty()) {
+    if (values1.empty() || weights1.empty()) {
         throw std::invalid_argument("Values and weights must be non-empty");
     }
 
-    if (values.size() != weights.size()) {
+    if (values1.size() != weights1.size()) {
         throw std::invalid_argument("Sizes of values and weights must match");
     }
 
+    vector<T>values = sortValuesAndWeights(values1, weights1);
+    vector<T>weights = sortValuesAndWeights(values1, weights1, 1);
+   
     // Преобразуем веса в кумулятивные суммы
     std::vector<size_t> cumulativeWeights(weights.size());
     std::partial_sum(weights.begin(), weights.end(), cumulativeWeights.begin());
@@ -311,7 +314,7 @@ template<typename T> T weightedMedian(const std::vector<T>& values, const std::v
 
 template<typename T> T partition(const std::vector<T>& values, const std::vector<T>& weights, T p, T r)
 {
-    // Преобразуем веса в кумулятивные суммы
+
     T result = abs(reduce(weights.begin(), weights[p]) - reduce(weights[r], weights.end()));
 
     return result;
@@ -320,6 +323,9 @@ template<typename T> T partition(const std::vector<T>& values, const std::vector
 
 template<typename T> T weightedMedianRecursed(const std::vector<T>& values, const std::vector<T>& weights, T p, T r)
 {
+    
+
+
     if (p == r)
         return p;
     if (r - p = 1)
@@ -335,29 +341,85 @@ template<typename T> T weightedMedianRecursed(const std::vector<T>& values, cons
            
 
     }
-    T wl, wg;
-        
+    T wl= reduce(weights.begin(), weights[p])/ reduce(weights.begin(), weights.end()), wg= reduce(weights[r], weights.end()/ reduce(weights.begin(), weights.end()));
+    if (wl < 0.5 || wg < 0.5)
+    {
 
 
+    }
+
+   
 
    
 }
 
 
-void sortValuesAndWeights(std::vector<double>& values, std::vector<double>& weights) {
-    if (values.empty() || weights.empty() || values.size() != weights.size()) {
-        std::cerr << "Ошибка: неверные входные данные!" << std::endl;
-        return;
+
+
+
+template<typename T> T Select(const std::vector<T>& A, T p, T r, T i)
+{
+    while ((r - p + 1) % 5 != 0)
+    {
+        for (int j = p + 1; j <= r; j++)
+        {
+            if (A[p] > A[j])//получаем минимум в A[p]
+            {
+                T temp = A[p];
+                A[p] = A[j];
+                A[j] = temp;
+
+            }
+        }
+
+            if (i == 1)
+                return A[p];
+            p = p + 1;
+            i = i - 1;
+            T g = (r - p + 1) / 5;
+            
+            for(int j=p;j==p+g-1;j++)
+            {
+                vector<T>temp = { *A[g],*A[j + g],*A[j + 2*g],*A[j + 3*g],*A[j + 4*g] };
+                temp.sort();
+            }
+                
+        
+
+
     }
 
+
+}
+
+
+
+template<typename T> T exchange(T* A,T* B)
+{
+    A = A + B;
+    B = A - B;
+    A = A - B;
+    return A;
+
+
+}
+
+
+template<typename T> vector<T>  sortValuesAndWeights(const std::vector<T>& values1, const std::vector<T>& weights1,int rg=0) {
+    if (values1.empty() || weights1.empty() || values1.size() != weights1.size()) {
+        std::cerr << "Ошибка: неверные входные данные!" << std::endl;
+        return false;
+    }
+    vector<T>values = values1;
+    vector<T>weights = weights1;
     // Создаем пары (значение, вес)
-    std::vector<std::pair<double, double>> data;
+    std::vector<std::pair<T, T>> data;
     for (size_t i = 0; i < values.size(); ++i) {
         data.push_back({ values[i], weights[i] });
     }
 
     // Сортируем пары по значениям
-    std::sort(data.begin(), data.end(), [](const std::pair<double, double>& a, const std::pair<double, double>& b) {
+    std::sort(data.begin(), data.end(), [](const std::pair<T, T>& a, const std::pair<T, T>& b) {
         return a.first < b.first;
         });
 
@@ -366,4 +428,7 @@ void sortValuesAndWeights(std::vector<double>& values, std::vector<double>& weig
         values[i] = data[i].first;
         weights[i] = data[i].second;
     }
+    if( rg==0)
+        return values;
+    return weights;
 }
