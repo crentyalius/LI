@@ -312,16 +312,7 @@ template<typename T> T weightedMedian(const std::vector<T>& values1, const std::
     return medianValue;
 }
 
-template<typename T> T partition(const std::vector<T>& values, const std::vector<T>& weights, T p, T r)
-{
-
-    T result = abs(reduce(weights.begin(), weights[p]) - reduce(weights[r], weights.end()));
-
-    return result;
-}
-
-
-template<typename T> T weightedMedianRecursed(const std::vector<T>& values, const std::vector<T>& weights, T p, T r)
+template<typename T> T weightedMedianRecursed( std::vector<T>& values,  std::vector<T>& weights, T p, T r)
 {
     
 
@@ -354,53 +345,99 @@ template<typename T> T weightedMedianRecursed(const std::vector<T>& values, cons
 }
 
 
-
-
-
-template<typename T> T Select(const std::vector<T>& A, T p, T r, T i)
-{
-    while ((r - p + 1) % 5 != 0)
-    {
-        for (int j = p + 1; j <= r; j++)
-        {
-            if (A[p] > A[j])//получаем минимум в A[p]
-            {
-                T temp = A[p];
-                A[p] = A[j];
-                A[j] = temp;
-
-            }
-        }
-
-            if (i == 1)
-                return A[p];
-            p = p + 1;
-            i = i - 1;
-            T g = (r - p + 1) / 5;
-            
-            for(int j=p;j==p+g-1;j++)
-            {
-                vector<T>temp = { *A[g],*A[j + g],*A[j + 2*g],*A[j + 3*g],*A[j + 4*g] };
-                temp.sort();
-            }
-                
-        
-
-
-    }
-
-
-}
-
-
-
-template<typename T> T exchange(T* A,T* B)
+template<typename T> void exchange(T& A, T& B)
 {
     A = A + B;
     B = A - B;
     A = A - B;
     return A;
 
+
+}
+
+
+template<typename T> int Partition_Around(std::vector<T>& A, std::vector<T>& W, T p, T r, T x)
+{
+    int  i = p - 1;
+    for (int j = p; j < r; j++)
+    {
+        if (A[j] <= x)
+        {
+            i++;
+            exchange(A[i], A[j]);
+            exchange(W[i], W[j]);
+        }
+        exchange(A[i + 1], A[r]);
+        exchange(W[i + 1], W[r]);
+    }
+    return i + 1;
+}
+ 
+template<typename T> T Select( std::vector<T>& A , std::vector<T>& W, T p, T r, T i)
+{
+    while ((r - p + 1) % 5 != 0)
+    {
+        for (int j = p + 1; j <= r; j++)// put the minimum into AŒp�
+        {
+            if (A[p] > A[j])
+            {
+                exchange(A[p], A[j]);
+                exchange(W[p], W[j]);
+            }
+        }
+        if (i == 1)// If we want the minimum of AŒp W r�, we’re done.
+            return A[p];
+        p = p + 1;// Otherwise, we want the .i  1/st element of AŒp C 1 W r�
+        i = i - 1;
+    }
+    T g = (r - p + 1) / 5;
+    for (int j = p; j < p + g; j++)
+    {
+        //создание временного массива для сортировки
+        vector <T> tempvalues = { A[j],A[j + g] ,A[j + 2 * g],A[j + 3 * g],A[j + 4 * g] };  
+        vector <T> tempweights = { W[j],W[j + g] ,W[j + 2 * g],W[j + 3 * g],W[j + 4 * g] };
+        // Создаем пары (значение, вес)
+        vector <std::pair<T, T>> data;
+        for (size_t i = 0; i < tempvalues.size(); ++i) {
+            data.push_back({ tempvalues[i], tempweights[i] });
+        }
+        //окончание  генерации массива для  сортировки
+        sort(data.begin(), data.end(), [](const std::pair<T, T>& a, const std::pair<T, T>& b) {
+            return a.first < b.first;
+            });
+
+        // Разделяем отсортированные значения и веса
+        for (size_t i = 0; i < data.size(); ++i) 
+        {
+            tempvalues[i] = data[i].first;
+            tempweights[i] = data[i].second;
+        }
+        //возврат инициализированных значений
+        A[j] = tempvalues[1];
+        A[j+g] = tempvalues[2];
+        A[j + 2*g] = tempvalues[3];
+        A[j +3* g] = tempvalues[4];
+        A[j + 4* g] = tempvalues[5];
+
+        W[j] = tempweights[1];
+        W[j + g] = tempweights[2];
+        W[j + 2 * g] = tempweights[3];
+        W[j + 3 * g] = tempweights[4];
+        W[j + 4 * g] = tempweights[5];
+    }
+        T X = Select(A, W, p + 2 * g, p + 3 * g - 1, g / 2);
+        T q = Partition_Around(A, W, p, r, X);
+        T k = q - p + 1;
+        if (i == k)
+        {
+            return A[q];
+        }
+        else if (i < k)
+        {
+            return Select(A, W, p, q - 1, i);
+        }
+        else
+            return Select(A, W, q+1,r,i - k);
 
 }
 
