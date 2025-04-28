@@ -1,240 +1,5 @@
-﻿#include <iostream>
-#include <random>
-#include <vector>
-#include <cmath>
-#include <algorithm>
-#include <limits>
-#include <array>
-#include <chrono>
-#include <numeric>
-using namespace std;
-
-
-double mean(const std::vector<double>& X) {
-    double sum = 0.0;
-    for (double x : X) {
-        sum += x;
-    }
-    return sum / X.size();
-}
-
-
-template<typename T> T weightedMedian(const std::vector<T>& values, const std::vector<T>& weights)
-
-{
-    if (values.empty() || weights.empty()) {
-        throw std::invalid_argument("Values and weights must be non-empty");
-    }
-
-    if (values.size() != weights.size()) {
-        throw std::invalid_argument("Sizes of values and weights must match");
-    }
-
-    // Преобразуем веса в кумулятивные суммы
-    std::vector<size_t> cumulativeWeights(weights.size());
-    std::partial_sum(weights.begin(), weights.end(), cumulativeWeights.begin());
-
-    size_t totalWeight = cumulativeWeights.back();
-
-    // Найти медианный индекс
-    size_t medianIndex;
-    if (totalWeight % 2 == 0) {
-        // Четное число элементов
-        medianIndex = totalWeight / 2 - 1;
-    }
-    else {
-        // Нечетное число элементов
-        medianIndex = totalWeight / 2;
-    }
-
-    // Бинарный поиск медианного значения
-    auto it = std::upper_bound(cumulativeWeights.begin(), cumulativeWeights.end(), medianIndex);
-    size_t rank = std::distance(cumulativeWeights.begin(), it);
-
-    // Определить медианное значение
-    T medianValue = values[rank];
-
-    return medianValue;
-}
-
-template<typename T> T median(const std::vector<T>& values)
-{
-    return weightedMedian(values, values);
-}
-
-
-void generateMatrix(std::vector<std::vector<double>>& matrix, int rows, int cols) {
-    static std::default_random_engine generator;
-    static std::uniform_real_distribution<double> distribution(-10.0, 10.0);
-    for (int i = 0; i < rows; ++i) {
-        for (int j = 0; j < cols; ++j) {
-            matrix[i][j] = distribution(generator);
-        }
-    }
-}
-
-std::vector<std::vector<double>> inverseMatrix(const std::vector<std::vector<double>>& matrix) {
-    int n = matrix.size();
-    std::vector<std::vector<double>> inverse(n, std::vector<double>(n));
-    for (int i = 0; i < n; ++i) {
-        for (int j = 0; j < n; ++j) {
-            inverse[i][j] = 0.0;
-        }
-        inverse[i][i] = 1.0;
-    }
-    for (int k = 0; k < n; ++k) {
-        for (int i = k; i < n; ++i) {
-            double pivot = matrix[i][k] / matrix[k][k];
-            for (int j = k; j < n; ++j) {
-                inverse[i][j] -= pivot * matrix[k][j];
-            }
-            inverse[i][k] = pivot;
-        }
-    }
-    for (int i = 0; i < n; ++i) {
-        for (int j = 0; j < n; ++j) {
-            if (i > j) {
-                inverse[i][j] /= matrix[i][i];
-            }
-            else if (i < j) {
-                inverse[i][j] = -(inverse[j][i]);
-            }
-            else {
-                inverse[i][j] = inverse[j][i];
-            }
-        }
-    }
-    return inverse;
-}
-
-void leastSquares(std::vector<std::vector<double>>& a, std::vector<std::vector<double>>& b, std::vector<double>& a_l, std::vector<double>& b_l) {
-    int n = a.size();
-    std::vector<std::vector<double>> X(n, std::vector<double>(n)), Y(n, std::vector<double>(n));
-    generateMatrix(X, n, n);
-    generateMatrix(Y, n, n);
-    std::vector<double> b_l_temp;
-    bool converged = false;
-    do {
-        std::vector<double> a_l_temp;
-        for (int i = 0; i < n; ++i) {
-            if (b_l_temp.size() != Y[i].size()) {
-                std::cerr << "Size mismatch between b_l_temp and Y[" << i << "]" << std::endl;
-                continue;
-            }
-            std::vector<double> diff(b_l_temp.size());
-            std::transform(b_l_temp.begin(), b_l_temp.end(), Y[i].begin(), diff.begin(), std::minus<>());
-            b_l_temp.push_back(median(b[i]) / std::accumulate(diff.begin(), diff.end(), 0.0));
-        }
-        for (int i = 0; i < n; ++i) {
-            if (a_l_temp.size() != X[i].size()) {
-                std::cerr << "Size mismatch between a_l_temp and X[" << i << "]" << std::endl;
-                continue;
-            }
-            
-
-            std::vector<double> diff(a_l_temp.size());
-            std::transform(a_l_temp.begin(), a_l_temp.end(), Y[i].begin(), diff.begin(), std::minus<>());
-            a_l_temp.push_back(median(b[i]) / std::accumulate(diff.begin(), diff.end(), 0.0));
-        }
-        converged = true;
-        for (int i = 0; i < n; ++i) {
-            if (!std::equal(a_l_temp.begin(), a_l_temp.begin() + i + 1, a_l.begin())) {
-                converged = false;
-                break;
-            }
-            if (!std::equal(b_l_temp.begin(), b_l_temp.begin() + i + 1, b_l.begin())) {
-                converged = false;
-                break;
-            }
-        }
-        std::swap(a_l, a_l_temp);
-        std::swap(b_l, b_l_temp);
-    } while (!converged);
-}
-
-int main() {
-    int n = std::rand() % 10 + 1;
-    std::vector<std::vector<double>> a(n, std::vector<double>(n)), b(n, std::vector<double>(n));
-    generateMatrix(a, n, n);
-    generateMatrix(b, n, n);
-    std::vector<double> a_l(n), b_l(n);
-    leastSquares(a, b, a_l, b_l);
-    std::cout << "a_l: ";
-    for (auto el : a_l) {
-        std::cout << el << ' ';
-    }
-    std::cout << '\n';
-    std::cout << "b_l: ";
-    for (auto el : b_l) {
-        std::cout << el << ' ';
-    }
-    std::cout << '\n';
-    return 0;
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*
-* 
-* 
-* // LI.cpp : Этот файл содержит функцию "main". Здесь начинается и заканчивается выполнение программы.
-//123
+// Li&ARCH.cpp : Этот файл содержит функцию "main". Здесь начинается и заканчивается выполнение программы.
+//
 
 #include <iostream>
 #include <vector>
@@ -246,152 +11,202 @@ int main() {
 #include <algorithm>
 #include <iterator>
 #include <numeric>
-#include "LI.h"
+#include <windows.h>
+#include <fstream>
+#include <iostream>
+#include <iomanip>
 
 using namespace std;
-template<typename T> T weightedMedian(const std::vector<T>& values, const std::vector<T>& weights);
-double gen_B0(const vector<double>& X, const vector<double>& Y, int N);
+template<typename T> T weightedMedian(const std::vector<T>& values, const std::vector<T>& weights);//взвешивание медианы
+void sortValuesAndWeights(std::vector<double>& values, std::vector<double>& weights);//сортировка по значениям
 
-double gen_A0(const vector<double>& X, const vector<double>& Y, double b, int N);
-vector<int> Indexate(const vector<double>& X, const vector<double>& Y, double a0, double b0, int N);
+std::string openFileDialog();
+bool fillArraysFromFile(const std::string& filename, std::vector<double>& array1, std::vector<double>& array2, int n );
 
-#pragma region Utility
-
-
-
-// Структура для точки данных
-struct Point {
-    vector<double> x; // Независимые переменные
-    double y;         // Зависимая переменная
-};
+double gen_B0(const vector<double>& X, const vector<double>& Y, int N);//генерация b0
+double gen_A0(const vector<double>& X, const vector<double>& Y, double b, int N);//генерация a0
 
 
-//демонстрация точек
-void printPoints(const vector<Point>& points) {
-    cout << "Сгенерированные точки:" << endl;
-    for (size_t i = 0; i < points.size(); ++i) {
-        cout << "Точка " << i + 1 << ": ";
-        cout << "x = [";
-        for (size_t j = 0; j < points[i].x.size(); ++j) {
-            cout << points[i].x[j];
-            if (j < points[i].x.size() - 1) cout << ", ";
-        }
-        cout << "] ";
-        cout << "y = " << points[i].y << endl;
-    }
-}
+vector<int> Indexate(const vector<double>& X, const vector<double>& Y, double a0, double b0, int N);//вывод индексов
 
 
 
-//генерация точек
-vector<Point> generatePoints(size_t numPoints = 10, size_t numVariables = 10, double min = 0.0, double max = 10.0) {
-    vector<Point> points;
-
-    // Инициализация генератора случайных чисел
-    random_device rd;
-    mt19937 gen(rd());
-    uniform_real_distribution<double> dist(min, max);
-
-    for (size_t i = 0; i < numPoints; ++i) {
-        Point point;
-        point.x.resize(numVariables);
-
-        // Генерация независимых переменных
-        for (size_t j = 0; j < numVariables; ++j) {
-            point.x[j] = dist(gen);
-        }
-
-        // Генерация зависимой переменной (например, линейная зависимость + шум)
-        double noise = dist(gen) * 0.1; // Малый шум
-        point.y = 0.0;
-        for (size_t j = 0; j < numVariables; ++j) {
-            point.y += point.x[j] * (j + 1); // Пример линейной зависимости
-        }
-        point.y += noise; // Добавление шума
-
-        points.push_back(point);
-    }
-
-    return points;
-}
-
-
-
-#pragma endregion
 
 int main()
 {
 
 
-    /*
-    std::vector<double> values = { 1.0, 2.0, 3.0, 4.0, 5.0 };
-    std::vector<size_t> weights = { 1, 2, 3, 4, 5 };
-
-    try {
-        double result = weightedMedian(values, weights);
-        std::cout << "Weighted Median: " << result << std::endl;
-    }
-    catch (std::exception& e) {
-        std::cerr << e.what() << std::endl;
-    }*/
-
+    setlocale(LC_ALL, "ru_RU.UTF-8");
+    const double epsilon = 0.001;
+    vector <double> bk;
+    vector <double> ak;
     //инициализация массивов
-    vector <double> X;
-    vector <double> Y;
+    int N = 5, k = 0;
+    vector <double> X = { 0.450, 0.50, 0.60, 2.0, 1.2 };
+    vector <double> Y = { 4.0, 5.0, 7.0, 10.0, 10.0 };
     vector <int> Index;
-    int N = 100;
+    vector <int> IndexStory;
+
+
+
+
+
+
+    std::string filename = "arrays.txt";
+    
+    fillArraysFromFile(filename, X, Y,N);
+
+    N = X.size();
+
+
+    //инициализация первичных a0 и b0
+    bk.push_back(gen_B0(X, Y, N));//работает 
+
+    ak.push_back(gen_A0(X, Y, bk.back(), N));// работает.
+
+    Index = Indexate(X, Y, ak.back(), bk.back(), N);
+
+
+
+
+
+
+
+    // printf("b%d=%f \n", k, bk.back());
+   //  printf("a%d=%f \n\n\n", k, ak.back());
+
+    k++;
+
+    double Xj;
+    Xj = X[Index.back()];
+    // Xj = X[Index[0]];
+
 
     for (int i = 0; i < N; i++)
+        X[i] -= Xj;
+
+
+    bk.push_back(bk.back() + ak.back() * Xj);
+    ak.push_back(gen_A0(X, Y, bk.back(), N));
+
+    // printf("b%d=%f \n",k, bk.back());
+    // printf("a%d=%f \n\n\n",k, ak.back());
+
+
+    Index.clear();
+    Index = Indexate(X, Y, ak.back(), bk.back(), N);
+    IndexStory.push_back(Index.back());
+    k++;
+
+
+    for (; abs(ak.back() - ak[ak.size() - 2]) > epsilon; k++)
     {
-        X[i] = i;
-        Y[i] = i;
+        Xj = X[Index.back()];
+        //Xj = X[Index[0]];
 
 
+        for (int i = 0; i < N; i++)
+            X[i] -= Xj;
+
+
+        bk.push_back(bk.back() + ak.back() * Xj);
+        ak.push_back(gen_A0(X, Y, bk.back(), N));
+
+
+
+        Index.clear();
+        Index = Indexate(X, Y, ak.back(), bk.back(), N);
+
+
+        bk.push_back(bk.back() - ak.back() * Xj);
+        // IndexStory.push_back(Index.back());
+
+
+         //std::printf("bLS=%f \n", (gen_B0(X, Y, N)));
+        // std::printf("b%d=%f \n", k, bk.back());
+        // std::printf("a%d=%f \n\n\n", k, ak.back());
     }
-    //инициализация первичных a0 и b0
-   double b0= gen_B0(X, Y, N);
-   double a0 = gen_A0(X, Y, b0, N);
-   
-   Index = Indexate(X, Y, a0, b0, N);
-
-
-
+    std::printf("b%d=%f \n", k, bk.back());
+    std::printf("a%d=%f \n\n\n", k, ak.back());
 
     return 0;
 
 
 }
 
+
+
+
+
+bool fillArraysFromFile(const std::string& filename, std::vector<double>& array1, std::vector<double>& array2,int n=0) {
+    
+        ifstream infile(filename);
+    if (!infile.is_open()) {
+        cerr << "Failed to open file for reading.\n";
+        return false;
+    }
+
+    // Reading the values from the file and initializing the
+    // array
+    for (int i = 0; i < n; ++i) {
+        infile >> array1[i]>> array2[i];
+    }
+
+    // Closing the file
+    infile.close();
+    return true;
+}
+
+
 vector<int> Indexate(const vector<double>& X, const vector<double>& Y, double a0, double b0, int N)
 {
+    double min = abs(a0 - (Y[1] - b0) / X[1]);
+
     vector<int> index;
     for (int i = 0; i < N; i++)
     {
         for (int j = 0; j < N; j++)
         {
+
             if (a0 == (Y[i] - b0) / X[j])
             {
-                index[i] = j;
+                index.push_back(i);
+                //index[i] = j;
+                //printf("X[%d]  подходит Y[%d]\n", j,i);
                 break;
             }
+            //else printf("NO %f \n", a0 -((Y[i] - b0) / X[j]));
+
+
 
         }
 
 
     }
+
     return index;
 
 }
 
-double gen_B0(const vector<double>& X, const vector<double>& Y,  int N)
+double gen_B0(const vector<double>& X, const vector<double>& Y, int N = 0)
 {
-    double Yy, Xx;
+    if (N == 0)
+        N = X.size();
 
-    Yy= accumulate(Y.begin(), Y.end(), 0)/Y.size();
-    Xx = accumulate(X.begin(), X.end(), 0) / X.size();
 
-    double up =0, down =0;
+    double Yy = 0, Xx = 0;
+    for (int i = 0; i < N; i++)
+    {
+        Yy += Y[i];
+        Xx += X[i];
+    }
+    Yy /= (double)Y.size();
+    Xx /= (double)X.size();
 
+
+
+
+    double up = 0.0, down = 0.0;
     for (int i = 0; i < N; i++)
     {
         up += (X[i] - Xx) * (Yy * Y[i] - Xx * Y[i]);
@@ -403,18 +218,42 @@ double gen_B0(const vector<double>& X, const vector<double>& Y,  int N)
 
 }
 
-
-double gen_A0(const vector<double>& X, const vector<double>& Y,double b, int N)
+double gen_B0_Alt(const vector<double>& X, const vector<double>& Y, int N = 0)
 {
-    vector <double> medMass;
+    if (N == 0)
+        N = X.size();
+
+    double Xx = 0, Yy = 0, XXX = 0, XY = 0;
+
     for (int i = 0; i < N; i++)
     {
-        medMass.push_back(abs(X[i]) * ((Y[i] - b) / X[i]));
+        Xx += X[i];
+        Yy += Y[i];
+        XXX += X[i] * X[i];
+        XY += X[i] * Y[i];
     }
 
+    return (N * XY - Xx * Yy) / (N * XXX - Xx * Xx);
 
 
-    double result = weightedMedian(medMass, medMass);
+}
+
+
+double gen_A0(const vector<double>& X, const vector<double>& Y, double b, int N)
+{
+    vector <double> medMass, x;
+    for (int i = 0; i < N; i++)
+    {
+        x.push_back(abs(X[i]));
+        medMass.push_back(((Y[i] - b) / X[i]));
+        //printf("%f ", ((Y[i] - b) / X[i]));
+    }
+
+    //sortValuesAndWeights(medMass, x);
+
+    double result = weightedMedian(medMass, x);
+
+
     return result;
 
 }
@@ -432,17 +271,20 @@ double rss(int N, double* Y, double* X, double A, double B) {
 
 
 //взвешенная медиана
-template<typename T> T weightedMedian(const std::vector<T>& values, const std::vector<T>& weights)
+template<typename T> T weightedMedian(const std::vector<T>& values1, const std::vector<T>& weights1)
 
 {
-    if (values.empty() || weights.empty()) {
+    if (values1.empty() || weights1.empty()) {
         throw std::invalid_argument("Values and weights must be non-empty");
     }
 
-    if (values.size() != weights.size()) {
+    if (values1.size() != weights1.size()) {
         throw std::invalid_argument("Sizes of values and weights must match");
     }
 
+    vector<T>values = sortValuesAndWeights(values1, weights1);
+    vector<T>weights = sortValuesAndWeights(values1, weights1, 1);
+   
     // Преобразуем веса в кумулятивные суммы
     std::vector<size_t> cumulativeWeights(weights.size());
     std::partial_sum(weights.begin(), weights.end(), cumulativeWeights.begin());
@@ -470,3 +312,160 @@ template<typename T> T weightedMedian(const std::vector<T>& values, const std::v
     return medianValue;
 }
 
+template<typename T> T weightedMedianRecursed( std::vector<T>& values,  std::vector<T>& weights, T p, T r)
+{
+    
+
+
+    if (p == r)
+        return p;
+    if (r - p = 1)
+    {
+        if (weights[p] == weights[r])
+            return (values[p] + values[r]) / 2;
+
+
+        if (weights[p] > weights[r])
+            return values[p];
+        else
+            return values[r];
+           
+
+    }
+    T wl= reduce(weights.begin(), weights[p])/ reduce(weights.begin(), weights.end()), wg= reduce(weights[r], weights.end()/ reduce(weights.begin(), weights.end()));
+    if (wl < 0.5 || wg < 0.5)
+    {
+
+
+    }
+
+   
+
+   
+}
+
+
+template<typename T> void exchange(T& A, T& B)
+{
+    A = A + B;
+    B = A - B;
+    A = A - B;
+    return A;
+
+
+}
+
+
+template<typename T> int Partition_Around(std::vector<T>& A, std::vector<T>& W, T p, T r, T x)
+{
+    int  i = p - 1;
+    for (int j = p; j < r; j++)
+    {
+        if (A[j] <= x)
+        {
+            i++;
+            exchange(A[i], A[j]);
+            exchange(W[i], W[j]);
+        }
+        exchange(A[i + 1], A[r]);
+        exchange(W[i + 1], W[r]);
+    }
+    return i + 1;
+}
+ 
+template<typename T> T Select( std::vector<T>& A , std::vector<T>& W, T p, T r, T i)
+{
+    while ((r - p + 1) % 5 != 0)
+    {
+        for (int j = p + 1; j <= r; j++)// put the minimum into AŒp�
+        {
+            if (A[p] > A[j])
+            {
+                exchange(A[p], A[j]);
+                exchange(W[p], W[j]);
+            }
+        }
+        if (i == 1)// If we want the minimum of AŒp W r�, we’re done.
+            return A[p];
+        p = p + 1;// Otherwise, we want the .i  1/st element of AŒp C 1 W r�
+        i = i - 1;
+    }
+    T g = (r - p + 1) / 5;
+    for (int j = p; j < p + g; j++)
+    {
+        //создание временного массива для сортировки
+        vector <T> tempvalues = { A[j],A[j + g] ,A[j + 2 * g],A[j + 3 * g],A[j + 4 * g] };  
+        vector <T> tempweights = { W[j],W[j + g] ,W[j + 2 * g],W[j + 3 * g],W[j + 4 * g] };
+        // Создаем пары (значение, вес)
+        vector <std::pair<T, T>> data;
+        for (size_t i = 0; i < tempvalues.size(); ++i) {
+            data.push_back({ tempvalues[i], tempweights[i] });
+        }
+        //окончание  генерации массива для  сортировки
+        sort(data.begin(), data.end(), [](const std::pair<T, T>& a, const std::pair<T, T>& b) {
+            return a.first < b.first;
+            });
+
+        // Разделяем отсортированные значения и веса
+        for (size_t i = 0; i < data.size(); ++i) 
+        {
+            tempvalues[i] = data[i].first;
+            tempweights[i] = data[i].second;
+        }
+        //возврат инициализированных значений
+        A[j] = tempvalues[1];
+        A[j+g] = tempvalues[2];
+        A[j + 2*g] = tempvalues[3];
+        A[j +3* g] = tempvalues[4];
+        A[j + 4* g] = tempvalues[5];
+
+        W[j] = tempweights[1];
+        W[j + g] = tempweights[2];
+        W[j + 2 * g] = tempweights[3];
+        W[j + 3 * g] = tempweights[4];
+        W[j + 4 * g] = tempweights[5];
+    }
+        T X = Select(A, W, p + 2 * g, p + 3 * g - 1, g / 2);
+        T q = Partition_Around(A, W, p, r, X);
+        T k = q - p + 1;
+        if (i == k)
+        {
+            return A[q];
+        }
+        else if (i < k)
+        {
+            return Select(A, W, p, q - 1, i);
+        }
+        else
+            return Select(A, W, q+1,r,i - k);
+
+}
+
+
+template<typename T> vector<T>  sortValuesAndWeights(const std::vector<T>& values1, const std::vector<T>& weights1,int rg=0) {
+    if (values1.empty() || weights1.empty() || values1.size() != weights1.size()) {
+        std::cerr << "Ошибка: неверные входные данные!" << std::endl;
+        return false;
+    }
+    vector<T>values = values1;
+    vector<T>weights = weights1;
+    // Создаем пары (значение, вес)
+    std::vector<std::pair<T, T>> data;
+    for (size_t i = 0; i < values.size(); ++i) {
+        data.push_back({ values[i], weights[i] });
+    }
+
+    // Сортируем пары по значениям
+    std::sort(data.begin(), data.end(), [](const std::pair<T, T>& a, const std::pair<T, T>& b) {
+        return a.first < b.first;
+        });
+
+    // Разделяем отсортированные значения и веса
+    for (size_t i = 0; i < data.size(); ++i) {
+        values[i] = data[i].first;
+        weights[i] = data[i].second;
+    }
+    if( rg==0)
+        return values;
+    return weights;
+}
