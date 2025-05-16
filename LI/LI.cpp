@@ -1,211 +1,224 @@
-﻿#include <iostream>
-#include <random>
+#include <iostream>
 #include <vector>
-#include <cmath>
 #include <algorithm>
-#include <limits>
-#include <array>
-#include <chrono>
+#include <cmath>
 #include <numeric>
-using namespace std;
+#include <clocale>
+#include <limits>
 
+struct DataPoint {
+    double x; // Р·РЅР°С‡РµРЅРёРµ
+    double y; // РІРµСЃ
 
-double mean(const std::vector<double>& X) {
-    double sum = 0.0;
-    for (double x : X) {
-        sum += x;
+    DataPoint(double xVal, double yVal) : x(xVal), y(yVal) {}
+    DataPoint() : x(0.0), y(0.0) {} // РџРѕ СѓРјРѕР»С‡Р°РЅРёСЋ
+};
+
+DataPoint weightedMedian(const std::vector<DataPoint>& dataPoints) {
+    std::vector<DataPoint> sortedData = dataPoints;
+    std::sort(sortedData.begin(), sortedData.end(),
+        [](const DataPoint& a, const DataPoint& b) {
+            return a.x < b.x;
+        });
+
+    double totalWeight = 0.0;
+    for (const auto& p : sortedData) {
+        totalWeight += p.y;
     }
-    return sum / X.size();
+
+    double cumulativeWeight = 0.0;
+    const double halfWeight = totalWeight / 2.0;
+
+    for (const auto& point : sortedData) {
+        cumulativeWeight += point.y;
+        if (cumulativeWeight >= halfWeight) {
+            return point;
+        }
+    }
+
+    return sortedData.back();
 }
 
+double calculateInitialB(const std::vector<DataPoint>& points) {
+    if (points.empty()) {
+        throw std::invalid_argument("Data points cannot be empty");
+    }
 
-template<typename T> T weightedMedian(const std::vector<T>& values, const std::vector<T>& weights)
+    size_t N = points.size();
+    double sum_x = 0.0, sum_y = 0.0;
 
+    for (const auto& point : points) {
+        sum_x += point.x;
+        sum_y += point.y;
+    }
+
+    double x_mean = sum_x / N;
+    double y_mean = sum_y / N;
+
+    double numerator = 0.0;
+    for (const auto& point : points) {
+        numerator += (point.x - x_mean) * (y_mean  - x_mean * point.y);
+    }
+
+    double denominator = 0.0;
+    for (const auto& point : points) {
+        denominator += std::pow(point.x - x_mean, 2);
+    }
+
+    if (denominator == 0) {
+        throw std::runtime_error("Denominator is zero (all x values are equal)");
+    }
+    std::cout << "b0 " << numerator / denominator << std::endl;// return 3.7;
+    return abs(numerator / denominator);
+}
+
+double calculateA0(const std::vector<DataPoint>& points, double b0) {
+    std::vector<DataPoint> weightedValues;
+    for (const auto& point : points) {
+        if (std::abs(point.x) < 1e-10) continue;
+        double value = (point.y - b0) / point.x;
+        double weight = std::abs(point.x);
+        weightedValues.push_back({ value, weight });
+    }
+    std::cout << "a0 " << weightedMedian(weightedValues).x << std::endl;
+    return weightedMedian(weightedValues).x;
+}
+
+struct EdgeParameters {
+    size_t index;
+    double slope;
+    double intercept;
+};
+
+EdgeParameters findEdgePoint(double a0, double b0, const std::vector<DataPoint>& points) {
+    EdgeParameters result;
+    double min_diff = std::numeric_limits<double>::max();
+
+    for (size_t i = 0; i < points.size(); ++i) {
+        const auto& p = points[i];
+        if (std::abs(p.x) < 1e-10) continue;
+
+        double current_a = (p.y - b0) / p.x;
+        double diff = std::abs(current_a - a0);
+
+        if (diff < min_diff) {
+            min_diff = diff;
+            result.index = i;
+            result.slope = -p.y / p.x;
+            result.intercept = p.y;
+        }
+    }
+
+    return result;
+}
+
+std::vector<DataPoint> transformDataSpace(const std::vector<DataPoint>& points, size_t j) {
+    double x_j = points[j].x;
+    std::vector<DataPoint> transformed;
+
+    for (const auto& p : points) {
+        transformed.push_back({ p.x - x_j, p.y });
+    }
+
+    return transformed;
+}
+
+std::vector<DataPoint> getMedianData(const std::vector<DataPoint>& points, double bk) {
+    std::vector<DataPoint> data;
+
+    for (const auto& p : points) {
+        if (std::abs(p.x) < 1e-10) continue;
+        double value = (p.y - bk) / p.x;
+        double weight = std::abs(p.x);
+        data.emplace_back(value, weight);
+    }
+
+    return data;
+}
+
+void ladRegression(const std::vector<DataPoint>& points, double& a, double& b, double tolerance = 1e-6, int maxIterations = 100)
 {
-    if (values.empty() || weights.empty()) {
-        throw std::invalid_argument("Values and weights must be non-empty");
+    if (points.empty()) {
+        throw std::invalid_argument("Data points cannot be empty");
     }
 
-    if (values.size() != weights.size()) {
-        throw std::invalid_argument("Sizes of values and weights must match");
+    // РЁР°Рі 0: РЅР°С‡Р°Р»СЊРЅРѕРµ РїСЂРёР±Р»РёР¶РµРЅРёРµ b0 Рё a0
+    double b_k = calculateInitialB(points);       // РЅР°С‡Р°Р»СЊРЅС‹Р№ b0
+    double a_k = calculateA0(points, b_k);        // РЅР°С‡Р°Р»СЊРЅС‹Р№ a0
+
+    for (int iter = 0; iter < maxIterations; ++iter) {
+        // РЁР°Рі 1: РЅР°Р№С‚Рё Р±Р»РёР¶Р°Р№С€СѓСЋ С‚РѕС‡РєСѓ j
+        EdgeParameters edge = findEdgePoint(a_k, b_k, points);
+        size_t j = edge.index;
+        double x_j = points[j].x;
+        double y_j = points[j].y;
+
+        // РЁР°Рі 2: СЃРґРІРёРіР°РµРј РґР°РЅРЅС‹Рµ РїРѕ j
+        std::vector<DataPoint> shiftedPoints = transformDataSpace(points, j);
+
+        // РЁР°Рі 3: РІС‹С‡РёСЃР»СЏРµРј РЅРѕРІРѕРµ Р·РЅР°С‡РµРЅРёРµ b'k = b_k + a_k * x_j
+        double b_k_shifted = b_k + a_k * x_j;
+
+        // РЁР°Рі 4: РјРµРґРёР°РЅРЅР°СЏ РѕС†РµРЅРєР° РґР»СЏ РЅРѕРІРѕРіРѕ РЅР°РєР»РѕРЅР° a
+        std::vector<DataPoint> medianData = getMedianData(shiftedPoints, b_k_shifted);
+        double a_k1 = weightedMedian(medianData).x;
+
+        // РЁР°Рі 5: РїРµСЂРµСЃС‡С‘С‚ b (РІРѕР·РІСЂР°С‚ Рє РёСЃС…РѕРґРЅРѕР№ СЃРёСЃС‚РµРјРµ РєРѕРѕСЂРґРёРЅР°С‚)
+        double b_k1 = y_j - a_k1 * x_j;
+
+        // РџСЂРѕРІРµСЂРєР° СЃС…РѕРґРёРјРѕСЃС‚Рё
+        if (std::abs(a_k1 - a_k) < tolerance && std::abs(b_k1 - b_k) < tolerance) {
+            a = a_k1;
+            b = b_k1;
+            return;
+        }
+
+        // РћР±РЅРѕРІР»СЏРµРј РїР°СЂР°РјРµС‚СЂС‹
+        a_k = a_k1;
+        b_k = b_k1;
     }
 
-    // Преобразуем веса в кумулятивные суммы
-    std::vector<size_t> cumulativeWeights(weights.size());
-    std::partial_sum(weights.begin(), weights.end(), cumulativeWeights.begin());
-
-    size_t totalWeight = cumulativeWeights.back();
-
-    // Найти медианный индекс
-    size_t medianIndex;
-    if (totalWeight % 2 == 0) {
-        // Четное число элементов
-        medianIndex = totalWeight / 2 - 1;
-    }
-    else {
-        // Нечетное число элементов
-        medianIndex = totalWeight / 2;
-    }
-
-    // Бинарный поиск медианного значения
-    auto it = std::upper_bound(cumulativeWeights.begin(), cumulativeWeights.end(), medianIndex);
-    size_t rank = std::distance(cumulativeWeights.begin(), it);
-
-    // Определить медианное значение
-    T medianValue = values[rank];
-
-    return medianValue;
+    // РџРѕСЃР»Рµ РёС‚РµСЂР°С†РёР№, РІРѕР·РІСЂР°С‰Р°РµРј РїРѕСЃР»РµРґРЅРёРµ Р·РЅР°С‡РµРЅРёСЏ
+    a = a_k;
+    b = b_k;
 }
 
-template<typename T> T median(const std::vector<T>& values)
-{
-    return weightedMedian(values, values);
-}
-
-
-void generateMatrix(std::vector<std::vector<double>>& matrix, int rows, int cols) {
-    static std::default_random_engine generator;
-    static std::uniform_real_distribution<double> distribution(-10.0, 10.0);
-    for (int i = 0; i < rows; ++i) {
-        for (int j = 0; j < cols; ++j) {
-            matrix[i][j] = distribution(generator);
-        }
-    }
-}
-
-std::vector<std::vector<double>> inverseMatrix(const std::vector<std::vector<double>>& matrix) {
-    int n = matrix.size();
-    std::vector<std::vector<double>> inverse(n, std::vector<double>(n));
-    for (int i = 0; i < n; ++i) {
-        for (int j = 0; j < n; ++j) {
-            inverse[i][j] = 0.0;
-        }
-        inverse[i][i] = 1.0;
-    }
-    for (int k = 0; k < n; ++k) {
-        for (int i = k; i < n; ++i) {
-            double pivot = matrix[i][k] / matrix[k][k];
-            for (int j = k; j < n; ++j) {
-                inverse[i][j] -= pivot * matrix[k][j];
-            }
-            inverse[i][k] = pivot;
-        }
-    }
-    for (int i = 0; i < n; ++i) {
-        for (int j = 0; j < n; ++j) {
-            if (i > j) {
-                inverse[i][j] /= matrix[i][i];
-            }
-            else if (i < j) {
-                inverse[i][j] = -(inverse[j][i]);
-            }
-            else {
-                inverse[i][j] = inverse[j][i];
-            }
-        }
-    }
-    return inverse;
-}
-
-void leastSquares(std::vector<std::vector<double>>& a, std::vector<std::vector<double>>& b, std::vector<double>& a_l, std::vector<double>& b_l) {
-    int n = a.size();
-    std::vector<std::vector<double>> X(n, std::vector<double>(n)), Y(n, std::vector<double>(n));
-    generateMatrix(X, n, n);
-    generateMatrix(Y, n, n);
-    std::vector<double> b_l_temp;
-    bool converged = false;
-    do {
-        std::vector<double> a_l_temp;
-        for (int i = 0; i < n; ++i) {
-            if (b_l_temp.size() != Y[i].size()) {
-                std::cerr << "Size mismatch between b_l_temp and Y[" << i << "]" << std::endl;
-                continue;
-            }
-            std::vector<double> diff(b_l_temp.size());
-            std::transform(b_l_temp.begin(), b_l_temp.end(), Y[i].begin(), diff.begin(), std::minus<>());
-            b_l_temp.push_back(median(b[i]) / std::accumulate(diff.begin(), diff.end(), 0.0));
-        }
-        for (int i = 0; i < n; ++i) {
-            if (a_l_temp.size() != X[i].size()) {
-                std::cerr << "Size mismatch between a_l_temp and X[" << i << "]" << std::endl;
-                continue;
-            }
-            
-
-            std::vector<double> diff(a_l_temp.size());
-            std::transform(a_l_temp.begin(), a_l_temp.end(), Y[i].begin(), diff.begin(), std::minus<>());
-            a_l_temp.push_back(median(b[i]) / std::accumulate(diff.begin(), diff.end(), 0.0));
-        }
-        converged = true;
-        for (int i = 0; i < n; ++i) {
-            if (!std::equal(a_l_temp.begin(), a_l_temp.begin() + i + 1, a_l.begin())) {
-                converged = false;
-                break;
-            }
-            if (!std::equal(b_l_temp.begin(), b_l_temp.begin() + i + 1, b_l.begin())) {
-                converged = false;
-                break;
-            }
-        }
-        std::swap(a_l, a_l_temp);
-        std::swap(b_l, b_l_temp);
-    } while (!converged);
-}
 
 int main() {
-    int n = std::rand() % 10 + 1;
-    std::vector<std::vector<double>> a(n, std::vector<double>(n)), b(n, std::vector<double>(n));
-    generateMatrix(a, n, n);
-    generateMatrix(b, n, n);
-    std::vector<double> a_l(n), b_l(n);
-    leastSquares(a, b, a_l, b_l);
-    std::cout << "a_l: ";
-    for (auto el : a_l) {
-        std::cout << el << ' ';
-    }
-    std::cout << '\n';
-    std::cout << "b_l: ";
-    for (auto el : b_l) {
-        std::cout << el << ' ';
-    }
-    std::cout << '\n';
+    setlocale(LC_ALL, "Russian");
+
+    std::vector<DataPoint> points = {
+        {0.45, 4.0},
+        {0.5, 5.0},
+        {0.6, 7.0},
+        {2.0, 10.0},
+        {1.2, 10.0}
+    };
+
+    //points = {
+    //   {4.0, 0.45},
+    //   {5.0,0.5 },
+    //   { 7.0,0.6},
+    //   { 10.0,2.0},
+    //   { 10.0,1.2}
+    //};
+
+
+    points = {
+       {1.0, 6.66},
+       {2.0, 10.0},
+       {3.0, 13.33}
+    };
+
+
+    double a = 0.0, b = 0.0;
+    ladRegression(points, a, b);
+
+    std::cout << "Slope (a): " << a << std::endl;
+    std::cout << "Intercept (b): " << b << std::endl;
+
     return 0;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
